@@ -1,0 +1,29 @@
+{
+  "name": "distributed-state-controller",
+  "version": "0.1.0",
+  "description": "A helper library for developing Channels card components to help with shared distributed state",
+  "main": "bin/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChannelElementsTeam/distributed-state-controller.git"
+  },
+  "author": "Kingston Duffie <kduffie@hivepoint.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ChannelElementsTeam/distributed-state-controller/issues"
+  },
+  "homepage": "https://github.com/ChannelElementsTeam/distributed-state-controller#readme",
+  "dependencies": {
+    "uuid": "^3.1.0"
+  },
+  "devDependencies": {
+    "ts-loader": "^2.1.0",
+    "typescript": "^2.3.4",
+    "webpack": "^3.0.0",
+    "@types/node": "^8.0.7",
+    "@types/uuid": "^3.0.0"
+  }
+}

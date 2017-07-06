@@ -1,0 +1,17 @@
+{
+  "name": "distributed-state-controller",
+  "description": "Helper library for dealing with shared distributed state in Channels card components based on mutations",
+  "main": "src/index.ts",
+  "authors": [
+    "Hivepoint Inc."
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/ChannelElementsTeam/distributed-state-controller",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
