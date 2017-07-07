@@ -35,25 +35,41 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var uuid = require('uuid');
 var MutationStateController = (function () {
-    function MutationStateController(host, channel, initialState) {
+    function MutationStateController() {
         this.state = {};
         this.history = [];
-        this.host = host;
-        this.channel = channel;
-        if (initialState) {
-            this.state = initialState;
-        }
     }
+    MutationStateController.prototype.initialize = function (host, initialState) {
+        this.host = host;
+        if (initialState) {
+            this.state = this.copy(initialState);
+        }
+    };
     MutationStateController.prototype.updateProperty = function (path, value) {
         return __awaiter(this, void 0, void 0, function () {
-            var message;
+            var mutation;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.channel.sendMutation('property-update', path, value)];
+                    case 0: return [4 /*yield*/, this.sendMutation('property-update', path, value)];
                     case 1:
-                        message = _a.sent();
-                        this.integrateMutation(message);
+                        mutation = _a.sent();
+                        this.integrateMutation(mutation);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    MutationStateController.prototype.incrementProperty = function (path, amount) {
+        return __awaiter(this, void 0, void 0, function () {
+            var mutation;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.sendMutation('property-increment', path, amount)];
+                    case 1:
+                        mutation = _a.sent();
+                        this.integrateMutation(mutation);
                         return [2 /*return*/];
                 }
             });
@@ -61,17 +77,20 @@ var MutationStateController = (function () {
     };
     MutationStateController.prototype.arrayInsert = function (path, value, beforeId) {
         return __awaiter(this, void 0, void 0, function () {
-            var message;
+            var mutation;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (typeof value !== 'object') {
                             throw new Error("MutationStateController.addRecord: value must be object");
                         }
-                        return [4 /*yield*/, this.channel.sendMutation('array-insert', path, value, value.id, beforeId)];
+                        if (!value.id) {
+                            value.id = uuid.v4();
+                        }
+                        return [4 /*yield*/, this.sendMutation('array-insert', path, value, value.id, beforeId)];
                     case 1:
-                        message = _a.sent();
-                        this.integrateMutation(message);
+                        mutation = _a.sent();
+                        this.integrateMutation(mutation);
                         return [2 /*return*/];
                 }
             });
@@ -79,13 +98,13 @@ var MutationStateController = (function () {
     };
     MutationStateController.prototype.arrayRemove = function (path, id) {
         return __awaiter(this, void 0, void 0, function () {
-            var message;
+            var mutation;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.channel.sendMutation('array-remove', path, null, id)];
+                    case 0: return [4 /*yield*/, this.sendMutation('array-remove', path, null, id)];
                     case 1:
-                        message = _a.sent();
-                        this.integrateMutation(message);
+                        mutation = _a.sent();
+                        this.integrateMutation(mutation);
                         return [2 /*return*/];
                 }
             });
@@ -93,13 +112,13 @@ var MutationStateController = (function () {
     };
     MutationStateController.prototype.arrayMove = function (path, id, beforeId) {
         return __awaiter(this, void 0, void 0, function () {
-            var message;
+            var mutation;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.channel.sendMutation('array-move', path, null, id, beforeId)];
+                    case 0: return [4 /*yield*/, this.sendMutation('array-move', path, null, id, beforeId)];
                     case 1:
-                        message = _a.sent();
-                        this.integrateMutation(message);
+                        mutation = _a.sent();
+                        this.integrateMutation(mutation);
                         return [2 /*return*/];
                 }
             });
@@ -107,60 +126,63 @@ var MutationStateController = (function () {
     };
     MutationStateController.prototype.arrayElementUpdate = function (path, id, internalPath, value) {
         return __awaiter(this, void 0, void 0, function () {
-            var message;
+            var mutation;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.channel.sendMutation('array-element-update', path, value, id, null, internalPath)];
+                    case 0: return [4 /*yield*/, this.sendMutation('array-element-update', path, value, id, null, internalPath)];
                     case 1:
-                        message = _a.sent();
-                        this.integrateMutation(message);
+                        mutation = _a.sent();
+                        this.integrateMutation(mutation);
                         return [2 /*return*/];
                 }
             });
         });
     };
-    MutationStateController.prototype.handleInboundMutation = function (message) {
+    MutationStateController.prototype.handleInboundMutation = function (mutation, messageInfo) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                this.integrateMutation(message);
+                this.integrateMutation({ details: mutation, message: messageInfo });
                 return [2 /*return*/];
             });
         });
     };
-    MutationStateController.prototype.integrateMutation = function (message) {
+    MutationStateController.prototype.integrateMutation = function (mutation) {
         var undoItems = [];
         // If we've already applied some mutations whose timestamps are later than this one being integrated, then we need to undo those first, and redo them afterward
-        while (this.history.length > 0 && (this.history[this.history.length - 1].message.timestamp > message.timestamp || (this.history[this.history.length - 1].message.timestamp === message.timestamp && this.history[this.history.length - 1].message.senderCode > message.senderCode))) {
+        while (this.history.length > 0 && (this.history[this.history.length - 1].message.timestamp > mutation.message.timestamp || (this.history[this.history.length - 1].message.timestamp === mutation.message.timestamp && this.history[this.history.length - 1].message.senderCode > mutation.message.senderCode))) {
             var undoItem = this.history.pop();
             undoItems.push(undoItem);
             this.undoMutation(undoItem);
         }
-        this.applyMutation(message);
+        this.applyMutation(mutation);
         while (undoItems.length > 0) {
             var item = undoItems.shift();
-            this.applyMutation(item.message);
+            this.applyMutation(item);
         }
     };
-    MutationStateController.prototype.applyMutation = function (message) {
+    MutationStateController.prototype.applyMutation = function (mutation) {
         var mutationInfo;
-        switch (message.mutationType) {
+        switch (mutation.details.mutationType) {
             case 'property-update':
-                mutationInfo = this.doPropertyUpdate(message);
+                mutationInfo = this.doPropertyUpdate(mutation);
+                break;
+            case 'property-increment':
+                mutationInfo = this.doPropertyIncrement(mutation);
                 break;
             case 'array-insert':
-                mutationInfo = this.doArrayInsert(message);
+                mutationInfo = this.doArrayInsert(mutation);
                 break;
             case 'array-remove':
-                mutationInfo = this.doArrayRemove(message);
+                mutationInfo = this.doArrayRemove(mutation);
                 break;
             case 'array-move':
-                mutationInfo = this.doArrayMove(message);
+                mutationInfo = this.doArrayMove(mutation);
                 break;
             case 'array-element-update':
-                mutationInfo = this.doArrayElementUpdate(message);
+                mutationInfo = this.doArrayElementUpdate(mutation);
                 break;
             default:
-                console.error("MutationStateController: unhandled mutation type " + message.mutationType);
+                console.error("MutationStateController: unhandled mutation type " + mutation.details.mutationType);
                 return;
         }
         if (mutationInfo) {
@@ -168,9 +190,12 @@ var MutationStateController = (function () {
         }
     };
     MutationStateController.prototype.undoMutation = function (item) {
-        switch (item.message.mutationType) {
+        switch (item.details.mutationType) {
             case 'property-update':
                 this.undoPropertyUpdate(item);
+                break;
+            case 'property-increment':
+                this.undoPropertyIncrement(item);
                 break;
             case 'array-insert':
                 this.undoArrayInsert(item);
@@ -185,46 +210,76 @@ var MutationStateController = (function () {
                 this.undoArrayElementUpdate(item);
                 break;
             default:
-                console.error("MutationStateController: unhandled mutation type " + item.message.mutationType);
+                console.error("MutationStateController: unhandled mutation type " + item.details.mutationType);
                 return;
         }
     };
-    MutationStateController.prototype.doPropertyUpdate = function (message) {
-        var previousValue = this.getStateElement(this.state, message.path);
-        var mutationInfo = {
-            message: message,
+    MutationStateController.prototype.doPropertyUpdate = function (item) {
+        var previousValue = this.getStateElement(this.state, item.details.path);
+        var undoable = {
+            message: item.message,
+            details: item.details,
             undoValue: previousValue,
             undoReferenceId: null
         };
-        this.setStateElement(this.state, message.path, message.value);
-        this.host.setProperty(message.path, message.value);
-        return mutationInfo;
+        this.setStateElement(this.state, item.details.path, item.details.value);
+        if (this.host.setProperty) {
+            this.host.setProperty(item.details.path, item.details.value);
+        }
+        return undoable;
     };
-    MutationStateController.prototype.undoPropertyUpdate = function (item) {
-        this.setStateElement(this.state, item.message.path, item.undoValue);
-        this.host.setProperty(item.message.path, item.undoValue);
+    MutationStateController.prototype.undoPropertyUpdate = function (undoable) {
+        this.setStateElement(this.state, undoable.details.path, undoable.undoValue);
+        if (this.host.setProperty) {
+            this.host.setProperty(undoable.details.path, undoable.undoValue);
+        }
     };
-    MutationStateController.prototype.doArrayInsert = function (message) {
+    MutationStateController.prototype.doPropertyIncrement = function (item) {
+        var previousValue = this.getStateElement(this.state, item.details.path);
+        if (!previousValue || Number.isNaN(previousValue)) {
+            previousValue = 0;
+        }
+        var undoable = {
+            message: item.message,
+            details: item.details,
+            undoValue: previousValue,
+            undoReferenceId: null
+        };
+        var value = item.details.value && !Number.isNaN(item.details.value) ? item.details.value : 0;
+        this.setStateElement(this.state, item.details.path, value + previousValue);
+        if (this.host.setProperty) {
+            this.host.setProperty(item.details.path, value + previousValue);
+        }
+        return undoable;
+    };
+    MutationStateController.prototype.undoPropertyIncrement = function (undoable) {
+        this.setStateElement(this.state, undoable.details.path, undoable.undoValue);
+        if (this.host.setProperty) {
+            this.host.setProperty(undoable.details.path, undoable.undoValue);
+        }
+    };
+    MutationStateController.prototype.doArrayInsert = function (item) {
         var mutationInfo = {
-            message: message,
+            message: item.message,
+            details: item.details,
             undoValue: null,
             undoReferenceId: null
         };
-        var array = this.getStateElement(this.state, message.path, true);
+        var array = this.getStateElement(this.state, item.details.path, true);
         if (!array) {
             console.error('MutationStateController: doArrayInsert: problem with array path');
             return null;
         }
-        message.value.id = message.recordId;
+        item.details.value.id = item.details.recordId;
         var found = false;
         var index;
         var beforeId;
-        if (message.referenceId) {
+        if (item.details.referenceId) {
             for (var i = 0; i < array.length; i++) {
-                if (array[i].id === message.referenceId) {
+                if (array[i].id === item.details.referenceId) {
                     beforeId = i < array.length - 1 ? array[i + 1].id : null;
                     index = i;
-                    array.splice(i, 0, message.value);
+                    array.splice(i, 0, item.details.value);
                     found = true;
                     break;
                 }
@@ -236,22 +291,24 @@ var MutationStateController = (function () {
         }
         else {
             index = array.length;
-            array.push(message.value);
+            array.push(item.details.value);
         }
-        this.host.spliceRecord(message.path, index, 0, this.copy(message.value));
+        if (this.host.spliceArray) {
+            this.host.spliceArray(item.details.path, index, 0, this.copy(item.details.value));
+        }
         return mutationInfo;
     };
-    MutationStateController.prototype.undoArrayInsert = function (item) {
-        var array = this.getStateElement(this.state, item.message.path, true);
+    MutationStateController.prototype.undoArrayInsert = function (undoable) {
+        var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayInsert: problem with array path');
             return null;
         }
         var index;
         var found = false;
-        if (item.message.recordId) {
+        if (undoable.details.recordId) {
             for (var i = 0; i < array.length; i++) {
-                if (array[i].id === item.message.recordId) {
+                if (array[i].id === undoable.details.recordId) {
                     array.splice(i, 1);
                     index = i;
                     found = true;
@@ -260,14 +317,16 @@ var MutationStateController = (function () {
             }
         }
         if (found) {
-            this.host.spliceRecord(item.message.path, index, 1);
+            if (this.host.spliceArray) {
+                this.host.spliceArray(undoable.details.path, index, 1);
+            }
         }
         else {
             console.error('MutationStateController: undoArrayInsert: message recordId missing');
         }
     };
-    MutationStateController.prototype.doArrayRemove = function (message) {
-        var array = this.getStateElement(this.state, message.path, true);
+    MutationStateController.prototype.doArrayRemove = function (item) {
+        var array = this.getStateElement(this.state, item.details.path, true);
         if (!array) {
             console.error('MutationStateController: doArrayRemove: problem with array path');
             return null;
@@ -276,7 +335,7 @@ var MutationStateController = (function () {
         var index;
         var referenceId;
         for (var i = 0; i < array.length; i++) {
-            if (array[i].id === message.recordId) {
+            if (array[i].id === item.details.recordId) {
                 record = array[i];
                 index = i;
                 referenceId = i < array.length - 1 ? array[i + 1].id : null;
@@ -288,36 +347,41 @@ var MutationStateController = (function () {
             console.error('MutationStateController: doArrayRemove: message recordId not found');
             return null;
         }
-        var mutationInfo = {
-            message: message,
+        var undoable = {
+            message: item.message,
+            details: item.details,
             undoValue: record,
             undoReferenceId: referenceId
         };
-        this.host.spliceRecord(message.path, index, 1);
-        return mutationInfo;
+        if (this.host.spliceArray) {
+            this.host.spliceArray(item.details.path, index, 1);
+        }
+        return undoable;
     };
-    MutationStateController.prototype.undoArrayRemove = function (item) {
-        var array = this.getStateElement(this.state, item.message.path, true);
+    MutationStateController.prototype.undoArrayRemove = function (undoable) {
+        var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayRemove: problem with array path');
             return null;
         }
-        if (item.undoReferenceId) {
+        if (undoable.undoReferenceId) {
             for (var i = 0; i < array.length; i++) {
-                if (array[i].id === item.undoReferenceId) {
-                    array.splice(i, 0, item.undoValue);
-                    this.host.spliceRecord(item.message.path, i, 0, this.copy(item.undoValue));
+                if (array[i].id === undoable.undoReferenceId) {
+                    array.splice(i, 0, undoable.undoValue);
+                    this.host.spliceArray(undoable.details.path, i, 0, this.copy(undoable.undoValue));
                     break;
                 }
             }
         }
         else {
-            array.push(item.undoValue);
-            this.host.spliceRecord(item.message.path, array.length, 0, this.copy(item.undoValue));
+            array.push(undoable.undoValue);
+            if (this.host.spliceArray) {
+                this.host.spliceArray(undoable.details.path, array.length, 0, this.copy(undoable.undoValue));
+            }
         }
     };
-    MutationStateController.prototype.doArrayMove = function (message) {
-        var array = this.getStateElement(this.state, message.path, true);
+    MutationStateController.prototype.doArrayMove = function (item) {
+        var array = this.getStateElement(this.state, item.details.path, true);
         if (!array) {
             console.error('MutationStateController: doArrayMove: problem with array path');
             return null;
@@ -326,7 +390,7 @@ var MutationStateController = (function () {
         var fromIndex;
         var originalBeforeId;
         for (var i = 0; i < array.length; i++) {
-            if (array[i].id === message.recordId) {
+            if (array[i].id === item.details.recordId) {
                 record = array[i];
                 fromIndex = i;
                 originalBeforeId = i < array.length - 1 ? array[i + 1].id : null;
@@ -340,10 +404,10 @@ var MutationStateController = (function () {
         }
         var toIndex;
         var newBeforeId;
-        if (message.referenceId) {
+        if (item.details.referenceId) {
             var found = false;
             for (var i = 0; i < array.length; i++) {
-                if (array[i].id === message.referenceId) {
+                if (array[i].id === item.details.referenceId) {
                     toIndex = i;
                     newBeforeId = i < array.length - 1 ? array[i + 1].id : null;
                     array.splice(i, 0, record);
@@ -360,17 +424,20 @@ var MutationStateController = (function () {
             toIndex = array.length;
             array.push(record);
         }
-        var mutationInfo = {
-            message: message,
+        var undoable = {
+            message: item.message,
+            details: item.details,
             undoValue: record,
             undoReferenceId: originalBeforeId
         };
-        this.host.spliceRecord(message.path, fromIndex, 1);
-        this.host.spliceRecord(message.path, toIndex, 0, this.copy(record));
-        return mutationInfo;
+        if (this.host.spliceArray) {
+            this.host.spliceArray(item.details.path, fromIndex, 1);
+            this.host.spliceArray(item.details.path, toIndex, 0, this.copy(record));
+        }
+        return undoable;
     };
-    MutationStateController.prototype.undoArrayMove = function (item) {
-        var array = this.getStateElement(this.state, item.message.path, true);
+    MutationStateController.prototype.undoArrayMove = function (undoable) {
+        var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayMove: problem with array path');
             return null;
@@ -379,7 +446,7 @@ var MutationStateController = (function () {
         var fromIndex;
         var originalBeforeId;
         for (var i = 0; i < array.length; i++) {
-            if (array[i].id === item.message.recordId) {
+            if (array[i].id === undoable.details.recordId) {
                 record = array[i];
                 fromIndex = i;
                 originalBeforeId = i < array.length - 1 ? array[i + 1].id : null;
@@ -393,10 +460,10 @@ var MutationStateController = (function () {
         }
         var toIndex;
         var newBeforeId;
-        if (item.undoReferenceId) {
+        if (undoable.undoReferenceId) {
             var found = false;
             for (var i = 0; i < array.length; i++) {
-                if (array[i].id === item.undoReferenceId) {
+                if (array[i].id === undoable.undoReferenceId) {
                     toIndex = i;
                     newBeforeId = i < array.length - 1 ? array[i + 1].id : null;
                     array.splice(i, 0, record);
@@ -413,11 +480,13 @@ var MutationStateController = (function () {
             toIndex = array.length;
             array.push(record);
         }
-        this.host.spliceRecord(item.message.path, fromIndex, 1);
-        this.host.spliceRecord(item.message.path, toIndex, 0, this.copy(record));
+        if (this.host.spliceArray) {
+            this.host.spliceArray(undoable.details.path, fromIndex, 1);
+            this.host.spliceArray(undoable.details.path, toIndex, 0, this.copy(record));
+        }
     };
-    MutationStateController.prototype.doArrayElementUpdate = function (message) {
-        var array = this.getStateElement(this.state, message.path, true);
+    MutationStateController.prototype.doArrayElementUpdate = function (item) {
+        var array = this.getStateElement(this.state, item.details.path, true);
         if (!array) {
             console.error('MutationStateController: doArrayElementUpdate: problem with array path');
             return null;
@@ -425,7 +494,7 @@ var MutationStateController = (function () {
         var record;
         var index;
         for (var i = 0; i < array.length; i++) {
-            if (array[i].id === message.recordId) {
+            if (array[i].id === item.details.recordId) {
                 record = array[i];
                 index = i;
                 break;
@@ -435,18 +504,21 @@ var MutationStateController = (function () {
             console.error('MutationStateController: doArrayElementUpdate: recordId not found');
             return null;
         }
-        var previousValue = this.getStateElement(record, message.elementPath);
-        var mutationInfo = {
-            message: message,
+        var previousValue = this.getStateElement(record, item.details.elementPath);
+        var undoable = {
+            message: item.message,
+            details: item.details,
             undoValue: previousValue,
             undoReferenceId: null
         };
-        this.setStateElement(record, message.elementPath, message.value);
-        this.host.updateRecord(message.path, record.id, index, record, message.elementPath, message.value);
-        return mutationInfo;
+        this.setStateElement(record, item.details.elementPath, item.details.value);
+        if (this.host.updateRecord) {
+            this.host.updateRecord(item.details.path, record.id, index, record, item.details.elementPath, item.details.value);
+        }
+        return undoable;
     };
-    MutationStateController.prototype.undoArrayElementUpdate = function (item) {
-        var array = this.getStateElement(this.state, item.message.path, true);
+    MutationStateController.prototype.undoArrayElementUpdate = function (undoable) {
+        var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayElementUpdate: problem with array path');
             return null;
@@ -454,7 +526,7 @@ var MutationStateController = (function () {
         var record;
         var index;
         for (var i = 0; i < array.length; i++) {
-            if (array[i].id === item.message.recordId) {
+            if (array[i].id === undoable.details.recordId) {
                 record = array[i];
                 index = i;
                 break;
@@ -464,8 +536,10 @@ var MutationStateController = (function () {
             console.error('MutationStateController: undoArrayElementUpdate: recordId not found');
             return null;
         }
-        this.setStateElement(record, item.message.elementPath, item.undoValue);
-        this.host.updateRecord(item.message.path, record.id, index, record, item.message.elementPath, item.undoValue);
+        this.setStateElement(record, undoable.details.elementPath, undoable.undoValue);
+        if (this.host.updateRecord) {
+            this.host.updateRecord(undoable.details.path, record.id, index, record, undoable.details.elementPath, undoable.undoValue);
+        }
     };
     MutationStateController.prototype.getStateElement = function (state, path, isArray) {
         if (isArray === void 0) { isArray = false; }
@@ -556,6 +630,39 @@ var MutationStateController = (function () {
     };
     MutationStateController.prototype.copy = function (object) {
         return JSON.parse(JSON.stringify(object));
+    };
+    MutationStateController.prototype.sendMutation = function (mutationType, path, value, recordId, referenceId, elementPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var mutation, message;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        mutation = {
+                            mutationType: mutationType,
+                            path: path
+                        };
+                        if (value) {
+                            mutation.value = value;
+                        }
+                        if (recordId) {
+                            mutation.recordId = recordId;
+                        }
+                        if (referenceId) {
+                            mutation.referenceId = referenceId;
+                        }
+                        if (elementPath) {
+                            mutation.elementPath = elementPath;
+                        }
+                        return [4 /*yield*/, this.host.sendMutation(mutation)];
+                    case 1:
+                        message = _a.sent();
+                        return [2 /*return*/, {
+                                details: mutation,
+                                message: message
+                            }];
+                }
+            });
+        });
     };
     return MutationStateController;
 }());

@@ -1,46 +1,49 @@
 export declare class MutationStateController {
     private host;
-    private channel;
     private state;
     private history;
-    constructor(host: HostComponent, channel: MutationChannel, initialState?: any);
+    initialize(host: HostComponent, initialState?: any): void;
     updateProperty(path: string, value: any): Promise<void>;
+    incrementProperty(path: string, amount: number): Promise<void>;
     arrayInsert(path: string, value: HasId, beforeId?: string): Promise<void>;
     arrayRemove(path: string, id: string): Promise<void>;
     arrayMove(path: string, id: string, beforeId: string): Promise<void>;
     arrayElementUpdate(path: string, id: string, internalPath: string, value: any): Promise<void>;
-    handleInboundMutation(message: MutationMessage): Promise<void>;
-    private integrateMutation(message);
-    private applyMutation(message);
+    handleInboundMutation(mutation: Mutation, messageInfo: CardToCardMessage): Promise<void>;
+    private integrateMutation(mutation);
+    private applyMutation(mutation);
     private undoMutation(item);
-    private doPropertyUpdate(message);
-    private undoPropertyUpdate(item);
-    private doArrayInsert(message);
-    private undoArrayInsert(item);
-    private doArrayRemove(message);
-    private undoArrayRemove(item);
-    private doArrayMove(message);
-    private undoArrayMove(item);
-    private doArrayElementUpdate(message);
-    private undoArrayElementUpdate(item);
+    private doPropertyUpdate(item);
+    private undoPropertyUpdate(undoable);
+    private doPropertyIncrement(item);
+    private undoPropertyIncrement(undoable);
+    private doArrayInsert(item);
+    private undoArrayInsert(undoable);
+    private doArrayRemove(item);
+    private undoArrayRemove(undoable);
+    private doArrayMove(item);
+    private undoArrayMove(undoable);
+    private doArrayElementUpdate(item);
+    private undoArrayElementUpdate(undoable);
     private getStateElement(state, path, isArray?);
     private setStateElement(state, path, value);
     private copy(object);
+    private sendMutation(mutationType, path, value?, recordId?, referenceId?, elementPath?);
 }
 export interface HostComponent {
-    setProperty(path: string, value: any): void;
-    spliceRecord(path: string, index: number, removeCount: number, recordToInsert?: any): void;
-    updateRecord(path: string, recordId: string, index: number, updatedRecordValue: any, elementPath: string, elementValue: any): void;
+    sendMutation(mutation: Mutation): Promise<CardToCardMessage>;
+    setProperty?(path: string, value: any): void;
+    spliceArray?(path: string, index: number, removeCount: number, recordToInsert?: any): void;
+    updateRecord?(path: string, recordId: string, index: number, updatedRecordValue: any, elementPath: string, elementValue: any): void;
 }
-export interface MutationChannel {
-    sendMutation(mutationType: string, path: string, value: any, recordId?: string, referenceId?: string, internalPath?: string): MutationMessage;
-}
-export interface MutationMessage {
+export interface CardToCardMessage {
     timestamp: number;
     senderCode: number;
+}
+export interface Mutation {
     mutationType: string;
     path: string;
-    value: any;
+    value?: any;
     recordId?: string;
     referenceId?: string;
     elementPath?: string;
