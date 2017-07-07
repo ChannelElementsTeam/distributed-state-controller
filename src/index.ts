@@ -22,7 +22,7 @@ export class MutationStateController {
     this.integrateMutation(mutation);
   }
 
-  async arrayInsert(path: string, value: HasId, beforeId?: string): Promise<void> {
+  async arrayInsert(path: string, value: any, beforeId?: string): Promise<void> {
     if (typeof value !== 'object') {
       throw new Error("MutationStateController.addRecord: value must be object");
     }
@@ -183,7 +183,14 @@ export class MutationStateController {
       console.error('MutationStateController: doArrayInsert: problem with array path');
       return null;
     }
-    item.details.value.id = item.details.recordId;
+    if (item.details.recordId) {
+      item.details.value.id = item.details.recordId;
+    } else if (item.details.value.id) {
+      item.details.recordId = item.details.value.id;
+    } else {
+      console.error('MutationStateController.doArrayInsert: recordId is missing and record has no ID');
+      return null;
+    }
     let found = false;
     let index: number;
     let beforeId: string;
@@ -464,7 +471,7 @@ export class MutationStateController {
       const part = parts[i];
       if (typeof object === 'object') {
         if (!object[part]) {
-          object[part] = {};
+          object[part] = i < parts.length - 1 ? {} : [];
         }
         object = object[part];
       } else if (i < parts.length - 1) {

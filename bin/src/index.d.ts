@@ -5,7 +5,7 @@ export declare class MutationStateController {
     initialize(host: HostComponent, initialState?: any): void;
     updateProperty(path: string, value: any): Promise<void>;
     incrementProperty(path: string, amount: number): Promise<void>;
-    arrayInsert(path: string, value: HasId, beforeId?: string): Promise<void>;
+    arrayInsert(path: string, value: any, beforeId?: string): Promise<void>;
     arrayRemove(path: string, id: string): Promise<void>;
     arrayMove(path: string, id: string, beforeId: string): Promise<void>;
     arrayElementUpdate(path: string, id: string, internalPath: string, value: any): Promise<void>;

@@ -270,7 +270,16 @@ var MutationStateController = (function () {
             console.error('MutationStateController: doArrayInsert: problem with array path');
             return null;
         }
-        item.details.value.id = item.details.recordId;
+        if (item.details.recordId) {
+            item.details.value.id = item.details.recordId;
+        }
+        else if (item.details.value.id) {
+            item.details.recordId = item.details.value.id;
+        }
+        else {
+            console.error('MutationStateController.doArrayInsert: recordId is missing and record has no ID');
+            return null;
+        }
         var found = false;
         var index;
         var beforeId;
@@ -549,7 +558,7 @@ var MutationStateController = (function () {
             var part = parts[i];
             if (typeof object === 'object') {
                 if (!object[part]) {
-                    object[part] = {};
+                    object[part] = i < parts.length - 1 ? {} : [];
                 }
                 object = object[part];
             }
