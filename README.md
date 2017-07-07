@@ -73,7 +73,7 @@ This is accomplished by a card that handles state changes using the distributed-
 
 In the following example, a simple card displays a shared list of comments contributed by any of the participants.  When a participant enters a comment and clicks "add", the card asks the controller to insert a new object in the "comments" array.  The controller will call back with `spliceArray` when the array has changed (either because of a local or remote change), and the card updates the state information accordingly.  The `dom-repeat` template is databound to that array, so the new comments will appear automatically.
 
-```javascript
+```html
 <dom-module id="comment-card-sample">
   <template>
     <style>
