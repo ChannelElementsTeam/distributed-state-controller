@@ -1,4 +1,5 @@
 const uuid = require('uuid');
+import { diff_match_patch } from 'diff-match-patch';
 
 export class MutationStateController {
   private host: HostComponent;
@@ -48,6 +49,15 @@ export class MutationStateController {
     this.integrateMutation(mutation);
   }
 
+  async updateText(path: string, updatedValue: string): Promise<void> {
+    const dmp = new diff_match_patch();
+    const previousValue = this.getStateElement(this.state, path) || '';
+    const patches = dmp.patch_make(previousValue, updatedValue);
+    const patchString = dmp.patch_toText(patches);
+    const mutation = await this.sendMutation('text-update', path, patchString);
+    this.integrateMutation(mutation);
+  }
+
   async handleInboundMutation(mutation: Mutation, messageInfo: CardToCardMessage): Promise<void> {
     this.integrateMutation({ details: mutation, message: messageInfo });
   }
@@ -88,6 +98,9 @@ export class MutationStateController {
       case 'array-element-update':
         mutationInfo = this.doArrayElementUpdate(mutation);
         break;
+      case 'text-update':
+        mutationInfo = this.doTextUpdate(mutation);
+        break;
       default:
         console.error("MutationStateController: unhandled mutation type " + mutation.details.mutationType);
         return;
@@ -98,6 +111,7 @@ export class MutationStateController {
   }
 
   private undoMutation(item: UndoableMutationMessage): void {
+    console.log("MutationStateController.undoMutation", item);
     switch (item.details.mutationType) {
       case 'property-update':
         this.undoPropertyUpdate(item);
@@ -116,6 +130,9 @@ export class MutationStateController {
         break;
       case 'array-element-update':
         this.undoArrayElementUpdate(item);
+        break;
+      case 'text-update':
+        this.undoTextUpdate(item);
         break;
       default:
         console.error("MutationStateController: unhandled mutation type " + item.details.mutationType);
@@ -464,6 +481,39 @@ export class MutationStateController {
     }
   }
 
+  private doTextUpdate(item: MutationMessage): UndoableMutationMessage {
+    const previousValue = this.getStateElement(this.state, item.details.path) || '';
+    const patchString = item.details.value;
+    const dmp = new diff_match_patch();
+    const patches = dmp.patch_fromText(patchString);
+    const newValue = dmp.patch_apply(patches, previousValue)[0];
+    const undoPatches = dmp.patch_make(newValue, previousValue);
+    const undoString = dmp.patch_toText(undoPatches);
+    const undoable: UndoableMutationMessage = {
+      message: item.message,
+      details: item.details,
+      undoValue: undoString,
+      undoReferenceId: null
+    };
+    this.setStateElement(this.state, item.details.path, newValue);
+    if (this.host.updateText) {
+      this.host.updateText(item.details.path, newValue);
+    }
+    return undoable;
+  }
+
+  private undoTextUpdate(undoable: UndoableMutationMessage): void {
+    const currentValue = this.getStateElement(this.state, undoable.details.path) || '';
+    const patchString = undoable.details.value;
+    const dmp = new diff_match_patch();
+    const patches = dmp.patch_fromText(patchString);
+    const originalValue = dmp.patch_apply(patches, currentValue)[0];
+    this.setStateElement(this.state, undoable.details.path, originalValue);
+    if (this.host.updateText) {
+      this.host.updateText(undoable.details.path, originalValue);
+    }
+  }
+
   private getStateElement(state: any, path: string, isArray = false): any {
     let object = state;
     const parts = path.split('.');
@@ -471,7 +521,7 @@ export class MutationStateController {
       const part = parts[i];
       if (typeof object === 'object') {
         if (!object[part]) {
-          object[part] = i < parts.length - 1 ? {} : [];
+          object[part] = i < parts.length - 1 ? {} : (isArray ? [] : null);
         }
         object = object[part];
       } else if (i < parts.length - 1) {
@@ -577,6 +627,7 @@ export interface HostComponent {
   setProperty?(path: string, value: any): void;
   spliceArray?(path: string, index: number, removeCount: number, recordToInsert?: any): void;
   updateRecord?(path: string, recordId: string, index: number, updatedRecordValue: any, elementPath: string, elementValue: any): void;
+  updateText?(path: string, value: string): void;
 }
 
 export interface CardToCardMessage {

@@ -17,10 +17,12 @@
   },
   "homepage": "https://github.com/ChannelElementsTeam/distributed-state-controller#readme",
   "dependencies": {
+    "diff-match-patch": "^1.0.0",
     "uuid": "^3.1.0"
   },
   "devDependencies": {
     "@types/chai": "^4.0.1",
+    "@types/diff-match-patch": "^1.0.31",
     "@types/mocha": "^2.2.41",
     "@types/node": "^8.0.7",
     "@types/uuid": "^3.0.0",

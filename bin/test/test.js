@@ -44,6 +44,8 @@ var TestHost = (function () {
         this.lastMutationSent = null;
         this.lastPropertySetPath = null;
         this.lastPropertySetValue = null;
+        this.lastTextPath = null;
+        this.lastTextValue = null;
         this.splices = [];
         this.senderCode = senderCode;
     }
@@ -71,6 +73,10 @@ var TestHost = (function () {
         };
         this.splices.push(info);
     };
+    TestHost.prototype.updateText = function (path, value) {
+        this.lastTextPath = path;
+        this.lastTextValue = value;
+    };
     return TestHost;
 }());
 describe('Mutation-based shared state controller', function () {
@@ -79,6 +85,9 @@ describe('Mutation-based shared state controller', function () {
     it('handles rollback/forward correctly for simple property change', testRollbackProperty);
     it('handles a simple array element insert', testArrayInsert);
     it('handles rollback for overlapping array element inserts', testArrayInsertRollback);
+    it('handles a simple text change correctly', testSimpleText);
+    it('handles synchronizing text changes correctly', testSyncText);
+    it('handles text rollbacks', testTextRollback);
 });
 function testSimpleProperty() {
     return __awaiter(this, void 0, void 0, function () {
@@ -234,6 +243,114 @@ function testArrayInsertRollback() {
                     chai_1.expect(testHost1.splices[3].index).to.equal(1);
                     chai_1.expect(testHost1.splices[3].removeCount).to.equal(0);
                     chai_1.expect(testHost1.splices[3].recordToInsert).to.deep.equal(record1);
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function testSimpleText() {
+    return __awaiter(this, void 0, void 0, function () {
+        var controller1, testHost1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    controller1 = new index_1.MutationStateController();
+                    testHost1 = new TestHost(1);
+                    controller1.initialize(testHost1);
+                    return [4 /*yield*/, controller1.updateText('comment', "The quick brown fox")];
+                case 1:
+                    _a.sent();
+                    chai_1.expect(testHost1.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost1.lastTextValue).to.equal('The quick brown fox');
+                    return [4 /*yield*/, controller1.updateText('comment', "The really quick brown ox")];
+                case 2:
+                    _a.sent();
+                    chai_1.expect(testHost1.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function testSyncText() {
+    return __awaiter(this, void 0, void 0, function () {
+        var controller1, testHost1, controller2, testHost2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    controller1 = new index_1.MutationStateController();
+                    testHost1 = new TestHost(1);
+                    controller1.initialize(testHost1);
+                    controller2 = new index_1.MutationStateController();
+                    testHost2 = new TestHost(2);
+                    controller2.initialize(testHost2);
+                    return [4 /*yield*/, controller1.updateText('comment', "The quick brown fox")];
+                case 1:
+                    _a.sent();
+                    chai_1.expect(testHost1.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost1.lastTextValue).to.equal('The quick brown fox');
+                    return [4 /*yield*/, controller2.handleInboundMutation(testHost1.lastMutationSent, testHost1.lastMutationMessage)];
+                case 2:
+                    _a.sent();
+                    chai_1.expect(testHost2.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost2.lastTextValue).to.equal('The quick brown fox');
+                    return [4 /*yield*/, controller2.updateText('comment', "The really quick brown ox")];
+                case 3:
+                    _a.sent();
+                    chai_1.expect(testHost2.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost2.lastTextValue).to.equal('The really quick brown ox');
+                    return [4 /*yield*/, controller1.handleInboundMutation(testHost2.lastMutationSent, testHost2.lastMutationMessage)];
+                case 4:
+                    _a.sent();
+                    chai_1.expect(testHost1.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function testTextRollback() {
+    return __awaiter(this, void 0, void 0, function () {
+        var controller1, testHost1, controller2, testHost2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    controller1 = new index_1.MutationStateController();
+                    testHost1 = new TestHost(1);
+                    controller1.initialize(testHost1);
+                    controller2 = new index_1.MutationStateController();
+                    testHost2 = new TestHost(2);
+                    controller2.initialize(testHost2);
+                    return [4 /*yield*/, controller1.updateText('comment', "The quick brown fox")];
+                case 1:
+                    _a.sent();
+                    return [4 /*yield*/, controller2.handleInboundMutation(testHost1.lastMutationSent, testHost1.lastMutationMessage)];
+                case 2:
+                    _a.sent();
+                    // Both sides have 'the quick brown fox'
+                    // Now both sides are going to make different changes concurrently
+                    return [4 /*yield*/, controller2.updateText('comment', "The really quick brown fox")];
+                case 3:
+                    // Both sides have 'the quick brown fox'
+                    // Now both sides are going to make different changes concurrently
+                    _a.sent();
+                    return [4 /*yield*/, controller1.updateText('comment', "The quick brown ox")];
+                case 4:
+                    _a.sent();
+                    // Now we deliver the change made first from 2 to 1, so that 1 will have to rollback and then
+                    // roll forward
+                    return [4 /*yield*/, controller1.handleInboundMutation(testHost2.lastMutationSent, testHost2.lastMutationMessage)];
+                case 5:
+                    // Now we deliver the change made first from 2 to 1, so that 1 will have to rollback and then
+                    // roll forward
+                    _a.sent();
+                    chai_1.expect(testHost1.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+                    return [4 /*yield*/, controller2.handleInboundMutation(testHost1.lastMutationSent, testHost1.lastMutationMessage)];
+                case 6:
+                    _a.sent();
+                    chai_1.expect(testHost2.lastTextPath).to.equal('comment');
+                    chai_1.expect(testHost2.lastTextValue).to.equal('The really quick brown ox');
                     return [2 /*return*/];
             }
         });

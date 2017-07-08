@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var uuid = require('uuid');
+var diff_match_patch_1 = require("diff-match-patch");
 var MutationStateController = (function () {
     function MutationStateController() {
         this.state = {};
@@ -138,6 +139,25 @@ var MutationStateController = (function () {
             });
         });
     };
+    MutationStateController.prototype.updateText = function (path, updatedValue) {
+        return __awaiter(this, void 0, void 0, function () {
+            var dmp, previousValue, patches, patchString, mutation;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        dmp = new diff_match_patch_1.diff_match_patch();
+                        previousValue = this.getStateElement(this.state, path) || '';
+                        patches = dmp.patch_make(previousValue, updatedValue);
+                        patchString = dmp.patch_toText(patches);
+                        return [4 /*yield*/, this.sendMutation('text-update', path, patchString)];
+                    case 1:
+                        mutation = _a.sent();
+                        this.integrateMutation(mutation);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     MutationStateController.prototype.handleInboundMutation = function (mutation, messageInfo) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -181,6 +201,9 @@ var MutationStateController = (function () {
             case 'array-element-update':
                 mutationInfo = this.doArrayElementUpdate(mutation);
                 break;
+            case 'text-update':
+                mutationInfo = this.doTextUpdate(mutation);
+                break;
             default:
                 console.error("MutationStateController: unhandled mutation type " + mutation.details.mutationType);
                 return;
@@ -190,6 +213,7 @@ var MutationStateController = (function () {
         }
     };
     MutationStateController.prototype.undoMutation = function (item) {
+        console.log("MutationStateController.undoMutation", item);
         switch (item.details.mutationType) {
             case 'property-update':
                 this.undoPropertyUpdate(item);
@@ -208,6 +232,9 @@ var MutationStateController = (function () {
                 break;
             case 'array-element-update':
                 this.undoArrayElementUpdate(item);
+                break;
+            case 'text-update':
+                this.undoTextUpdate(item);
                 break;
             default:
                 console.error("MutationStateController: unhandled mutation type " + item.details.mutationType);
@@ -550,6 +577,37 @@ var MutationStateController = (function () {
             this.host.updateRecord(undoable.details.path, record.id, index, record, undoable.details.elementPath, undoable.undoValue);
         }
     };
+    MutationStateController.prototype.doTextUpdate = function (item) {
+        var previousValue = this.getStateElement(this.state, item.details.path) || '';
+        var patchString = item.details.value;
+        var dmp = new diff_match_patch_1.diff_match_patch();
+        var patches = dmp.patch_fromText(patchString);
+        var newValue = dmp.patch_apply(patches, previousValue)[0];
+        var undoPatches = dmp.patch_make(newValue, previousValue);
+        var undoString = dmp.patch_toText(undoPatches);
+        var undoable = {
+            message: item.message,
+            details: item.details,
+            undoValue: undoString,
+            undoReferenceId: null
+        };
+        this.setStateElement(this.state, item.details.path, newValue);
+        if (this.host.updateText) {
+            this.host.updateText(item.details.path, newValue);
+        }
+        return undoable;
+    };
+    MutationStateController.prototype.undoTextUpdate = function (undoable) {
+        var currentValue = this.getStateElement(this.state, undoable.details.path) || '';
+        var patchString = undoable.details.value;
+        var dmp = new diff_match_patch_1.diff_match_patch();
+        var patches = dmp.patch_fromText(patchString);
+        var originalValue = dmp.patch_apply(patches, currentValue)[0];
+        this.setStateElement(this.state, undoable.details.path, originalValue);
+        if (this.host.updateText) {
+            this.host.updateText(undoable.details.path, originalValue);
+        }
+    };
     MutationStateController.prototype.getStateElement = function (state, path, isArray) {
         if (isArray === void 0) { isArray = false; }
         var object = state;
@@ -558,7 +616,7 @@ var MutationStateController = (function () {
             var part = parts[i];
             if (typeof object === 'object') {
                 if (!object[part]) {
-                    object[part] = i < parts.length - 1 ? {} : [];
+                    object[part] = i < parts.length - 1 ? {} : (isArray ? [] : null);
                 }
                 object = object[part];
             }

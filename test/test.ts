@@ -10,6 +10,8 @@ class TestHost implements HostComponent {
   lastMutationMessage: CardToCardMessage;
   lastPropertySetPath: string = null;
   lastPropertySetValue: any = null;
+  lastTextPath: string = null;
+  lastTextValue: string = null;
 
   splices: SpliceInfo[] = [];
 
@@ -38,6 +40,11 @@ class TestHost implements HostComponent {
     };
     this.splices.push(info);
   }
+
+  updateText(path: string, value: string): void {
+    this.lastTextPath = path;
+    this.lastTextValue = value;
+  }
 }
 
 describe('Mutation-based shared state controller', () => {
@@ -46,6 +53,9 @@ describe('Mutation-based shared state controller', () => {
   it('handles rollback/forward correctly for simple property change', testRollbackProperty);
   it('handles a simple array element insert', testArrayInsert);
   it('handles rollback for overlapping array element inserts', testArrayInsertRollback);
+  it('handles a simple text change correctly', testSimpleText);
+  it('handles synchronizing text changes correctly', testSyncText);
+  it('handles text rollbacks', testTextRollback);
 });
 
 async function testSimpleProperty(): Promise<void> {
@@ -157,6 +167,71 @@ async function testArrayInsertRollback(): Promise<void> {
   expect(testHost1.splices[3].removeCount).to.equal(0);
   expect(testHost1.splices[3].recordToInsert).to.deep.equal(record1);
 }
+
+async function testSimpleText(): Promise<void> {
+  const controller1 = new MutationStateController();
+  const testHost1 = new TestHost(1);
+  controller1.initialize(testHost1);
+  await controller1.updateText('comment', "The quick brown fox");
+  expect(testHost1.lastTextPath).to.equal('comment');
+  expect(testHost1.lastTextValue).to.equal('The quick brown fox');
+  await controller1.updateText('comment', "The really quick brown ox");
+  expect(testHost1.lastTextPath).to.equal('comment');
+  expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+}
+
+async function testSyncText(): Promise<void> {
+  const controller1 = new MutationStateController();
+  const testHost1 = new TestHost(1);
+  controller1.initialize(testHost1);
+
+  const controller2 = new MutationStateController();
+  const testHost2 = new TestHost(2);
+  controller2.initialize(testHost2);
+
+  await controller1.updateText('comment', "The quick brown fox");
+  expect(testHost1.lastTextPath).to.equal('comment');
+  expect(testHost1.lastTextValue).to.equal('The quick brown fox');
+  await controller2.handleInboundMutation(testHost1.lastMutationSent, testHost1.lastMutationMessage);
+  expect(testHost2.lastTextPath).to.equal('comment');
+  expect(testHost2.lastTextValue).to.equal('The quick brown fox');
+  await controller2.updateText('comment', "The really quick brown ox");
+  expect(testHost2.lastTextPath).to.equal('comment');
+  expect(testHost2.lastTextValue).to.equal('The really quick brown ox');
+  await controller1.handleInboundMutation(testHost2.lastMutationSent, testHost2.lastMutationMessage);
+  expect(testHost1.lastTextPath).to.equal('comment');
+  expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+}
+
+async function testTextRollback(): Promise<void> {
+  const controller1 = new MutationStateController();
+  const testHost1 = new TestHost(1);
+  controller1.initialize(testHost1);
+
+  const controller2 = new MutationStateController();
+  const testHost2 = new TestHost(2);
+  controller2.initialize(testHost2);
+
+  await controller1.updateText('comment', "The quick brown fox");
+  await controller2.handleInboundMutation(testHost1.lastMutationSent, testHost1.lastMutationMessage);
+
+  // Both sides have 'the quick brown fox'
+  // Now both sides are going to make different changes concurrently
+  await controller2.updateText('comment', "The really quick brown fox");
+  await controller1.updateText('comment', "The quick brown ox");
+
+  // Now we deliver the change made first from 2 to 1, so that 1 will have to rollback and then
+  // roll forward
+
+  await controller1.handleInboundMutation(testHost2.lastMutationSent, testHost2.lastMutationMessage);
+  expect(testHost1.lastTextPath).to.equal('comment');
+  expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+
+  await controller2.handleInboundMutation(testHost1.lastMutationSent, testHost1.lastMutationMessage);
+  expect(testHost2.lastTextPath).to.equal('comment');
+  expect(testHost2.lastTextValue).to.equal('The really quick brown ox');
+}
+
 
 interface SpliceInfo {
   path: string;

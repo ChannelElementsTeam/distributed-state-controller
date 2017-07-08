@@ -9,6 +9,7 @@ export declare class MutationStateController {
     arrayRemove(path: string, id: string): Promise<void>;
     arrayMove(path: string, id: string, beforeId: string): Promise<void>;
     arrayElementUpdate(path: string, id: string, internalPath: string, value: any): Promise<void>;
+    updateText(path: string, updatedValue: string): Promise<void>;
     handleInboundMutation(mutation: Mutation, messageInfo: CardToCardMessage): Promise<void>;
     private integrateMutation(mutation);
     private applyMutation(mutation);
@@ -25,6 +26,8 @@ export declare class MutationStateController {
     private undoArrayMove(undoable);
     private doArrayElementUpdate(item);
     private undoArrayElementUpdate(undoable);
+    private doTextUpdate(item);
+    private undoTextUpdate(undoable);
     private getStateElement(state, path, isArray?);
     private setStateElement(state, path, value);
     private copy(object);
@@ -35,6 +38,7 @@ export interface HostComponent {
     setProperty?(path: string, value: any): void;
     spliceArray?(path: string, index: number, removeCount: number, recordToInsert?: any): void;
     updateRecord?(path: string, recordId: string, index: number, updatedRecordValue: any, elementPath: string, elementValue: any): void;
+    updateText?(path: string, value: string): void;
 }
 export interface CardToCardMessage {
     timestamp: number;
