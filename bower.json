@@ -1,7 +1,10 @@
 {
   "name": "distributed-state-controller",
   "description": "Helper library for dealing with shared distributed state in Channels card components based on mutations",
-  "main": "src/index.ts",
+  "main": "bin/src/index.js",
+  "typescript": {
+    "definition": "bin/src/index.d.ts"
+  },
   "authors": [
     "Hivepoint Inc."
   ],
@@ -13,5 +16,9 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "google-diff-match-patch-js": "^1.0.0",
+    "uuid": "^2.0.2"
+  }
 }
