@@ -1,4 +1,4 @@
-import { MutationStateController, HostComponent, Mutation, CardToCardMessage } from "../src/index"
+import { DistributedStateController, HostComponent, Mutation, CardToCardMessage } from "../src/index";
 import { expect } from 'chai';
 
 const state = {};
@@ -63,7 +63,7 @@ describe('Mutation-based shared state controller', () => {
 });
 
 async function testSimpleProperty(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
   await controller1.updateProperty('apples', 1);
@@ -76,11 +76,11 @@ async function testSimpleProperty(): Promise<void> {
 }
 
 async function testSyncSimpleProperty(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
 
-  const controller2 = new MutationStateController();
+  const controller2 = new DistributedStateController();
   const testHost2 = new TestHost(2);
   controller2.initialize(testHost2);
 
@@ -91,7 +91,7 @@ async function testSyncSimpleProperty(): Promise<void> {
 }
 
 async function testRollbackProperty(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
 
@@ -108,17 +108,17 @@ async function testRollbackProperty(): Promise<void> {
   await controller1.handleInboundMutation(mutation, msg);
   expect(testHost1.lastPropertySetPath).to.equal('carrots');
   expect(testHost1.lastPropertySetValue).to.equal(3);
-  // This is because the rollback should happen because of the earlier timestamp, 
+  // This is because the rollback should happen because of the earlier timestamp,
   // then the second mutation is processed first, then the original mutation reprocessed
   // which should arrive back at the original value of 3
 }
 
 async function testArrayInsert(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
 
-  const controller2 = new MutationStateController();
+  const controller2 = new DistributedStateController();
   const testHost2 = new TestHost(2);
   controller2.initialize(testHost2);
 
@@ -133,7 +133,7 @@ async function testArrayInsert(): Promise<void> {
 }
 
 async function testArrayInsertRollback(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
 
@@ -173,7 +173,7 @@ async function testArrayInsertRollback(): Promise<void> {
 }
 
 async function testSimpleText(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
   await controller1.updateText('comment', "The quick brown fox");
@@ -188,11 +188,11 @@ async function testSimpleText(): Promise<void> {
 }
 
 async function testSyncText(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
 
-  const controller2 = new MutationStateController();
+  const controller2 = new DistributedStateController();
   const testHost2 = new TestHost(2);
   controller2.initialize(testHost2);
 
@@ -211,11 +211,11 @@ async function testSyncText(): Promise<void> {
 }
 
 async function testTextRollback(): Promise<void> {
-  const controller1 = new MutationStateController();
+  const controller1 = new DistributedStateController();
   const testHost1 = new TestHost(1);
   controller1.initialize(testHost1);
 
-  const controller2 = new MutationStateController();
+  const controller2 = new DistributedStateController();
   const testHost2 = new TestHost(2);
   controller2.initialize(testHost2);
 
@@ -238,7 +238,6 @@ async function testTextRollback(): Promise<void> {
   expect(testHost2.lastTextPath).to.equal('comment');
   expect(testHost2.lastTextValue).to.equal('The really quick brown ox');
 }
-
 
 interface SpliceInfo {
   path: string;

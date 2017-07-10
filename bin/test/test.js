@@ -98,7 +98,7 @@ function testSimpleProperty() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
                     return [4 /*yield*/, controller1.updateProperty('apples', 1)];
@@ -121,10 +121,10 @@ function testSyncSimpleProperty() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
-                    controller2 = new index_1.MutationStateController();
+                    controller2 = new index_1.DistributedStateController();
                     testHost2 = new TestHost(2);
                     controller2.initialize(testHost2);
                     return [4 /*yield*/, controller1.updateProperty('bananas', 2)];
@@ -146,7 +146,7 @@ function testRollbackProperty() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
                     return [4 /*yield*/, controller1.updateProperty('carrots', 3)];
@@ -177,10 +177,10 @@ function testArrayInsert() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
-                    controller2 = new index_1.MutationStateController();
+                    controller2 = new index_1.DistributedStateController();
                     testHost2 = new TestHost(2);
                     controller2.initialize(testHost2);
                     record = { name: "item1" };
@@ -206,7 +206,7 @@ function testArrayInsertRollback() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
                     record1 = { id: "1", name: "item1" };
@@ -257,7 +257,7 @@ function testSimpleText() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
                     return [4 /*yield*/, controller1.updateText('comment', "The quick brown fox")];
@@ -284,10 +284,10 @@ function testSyncText() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
-                    controller2 = new index_1.MutationStateController();
+                    controller2 = new index_1.DistributedStateController();
                     testHost2 = new TestHost(2);
                     controller2.initialize(testHost2);
                     return [4 /*yield*/, controller1.updateText('comment', "The quick brown fox")];
@@ -321,10 +321,10 @@ function testTextRollback() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    controller1 = new index_1.MutationStateController();
+                    controller1 = new index_1.DistributedStateController();
                     testHost1 = new TestHost(1);
                     controller1.initialize(testHost1);
-                    controller2 = new index_1.MutationStateController();
+                    controller2 = new index_1.DistributedStateController();
                     testHost2 = new TestHost(2);
                     controller2.initialize(testHost2);
                     return [4 /*yield*/, controller1.updateText('comment', "The quick brown fox")];

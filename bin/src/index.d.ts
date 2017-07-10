@@ -1,4 +1,4 @@
-export declare class MutationStateController {
+export declare class DistributedStateController {
     private host;
     private state;
     private history;

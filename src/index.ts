@@ -1,7 +1,7 @@
 const uuid = require('uuid');
 import { diff_match_patch, Patch } from 'diff-match-patch';
 
-export class MutationStateController {
+export class DistributedStateController {
   private host: HostComponent;
   private state: any = {};
   private history: UndoableMutationMessage[] = [];
@@ -518,7 +518,7 @@ export class MutationStateController {
 
   // This helps with a client who is editing text as to what to do with the current
   // caret (cursor) position when a change happens.  Depending on where there are
-  // inserts and deletes relative to the caret position, it may move forward or 
+  // inserts and deletes relative to the caret position, it may move forward or
   // backward.
   private getCaretUpdater(patches: Patch[]): (position: number) => number {
     return (position: number): number => {
@@ -548,11 +548,13 @@ export class MutationStateController {
               offset += diff[1].length;
               position2 += diff[1].length;
               break;
+            default:
+              throw new Error("Unexpected diff type: " + diff[0]);
           }
         }
       }
       return offset;
-    }
+    };
   }
 
   private getStateElement(state: any, path: string, isArray = false): any {

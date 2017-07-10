@@ -37,18 +37,18 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var uuid = require('uuid');
 var diff_match_patch_1 = require("diff-match-patch");
-var MutationStateController = (function () {
-    function MutationStateController() {
+var DistributedStateController = (function () {
+    function DistributedStateController() {
         this.state = {};
         this.history = [];
     }
-    MutationStateController.prototype.initialize = function (host, initialState) {
+    DistributedStateController.prototype.initialize = function (host, initialState) {
         this.host = host;
         if (initialState) {
             this.state = this.copy(initialState);
         }
     };
-    MutationStateController.prototype.updateProperty = function (path, value) {
+    DistributedStateController.prototype.updateProperty = function (path, value) {
         return __awaiter(this, void 0, void 0, function () {
             var mutation;
             return __generator(this, function (_a) {
@@ -62,7 +62,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.incrementProperty = function (path, amount) {
+    DistributedStateController.prototype.incrementProperty = function (path, amount) {
         return __awaiter(this, void 0, void 0, function () {
             var mutation;
             return __generator(this, function (_a) {
@@ -76,7 +76,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.arrayInsert = function (path, value, beforeId) {
+    DistributedStateController.prototype.arrayInsert = function (path, value, beforeId) {
         return __awaiter(this, void 0, void 0, function () {
             var mutation;
             return __generator(this, function (_a) {
@@ -97,7 +97,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.arrayRemove = function (path, id) {
+    DistributedStateController.prototype.arrayRemove = function (path, id) {
         return __awaiter(this, void 0, void 0, function () {
             var mutation;
             return __generator(this, function (_a) {
@@ -111,7 +111,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.arrayMove = function (path, id, beforeId) {
+    DistributedStateController.prototype.arrayMove = function (path, id, beforeId) {
         return __awaiter(this, void 0, void 0, function () {
             var mutation;
             return __generator(this, function (_a) {
@@ -125,7 +125,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.arrayElementUpdate = function (path, id, internalPath, value) {
+    DistributedStateController.prototype.arrayElementUpdate = function (path, id, internalPath, value) {
         return __awaiter(this, void 0, void 0, function () {
             var mutation;
             return __generator(this, function (_a) {
@@ -139,7 +139,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.updateText = function (path, updatedValue) {
+    DistributedStateController.prototype.updateText = function (path, updatedValue) {
         return __awaiter(this, void 0, void 0, function () {
             var dmp, previousValue, patches, patchString, mutation;
             return __generator(this, function (_a) {
@@ -158,7 +158,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.handleInboundMutation = function (mutation, messageInfo) {
+    DistributedStateController.prototype.handleInboundMutation = function (mutation, messageInfo) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 this.integrateMutation({ details: mutation, message: messageInfo });
@@ -166,7 +166,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    MutationStateController.prototype.integrateMutation = function (mutation) {
+    DistributedStateController.prototype.integrateMutation = function (mutation) {
         var undoItems = [];
         // If we've already applied some mutations whose timestamps are later than this one being integrated, then we need to undo those first, and redo them afterward
         while (this.history.length > 0 && (this.history[this.history.length - 1].message.timestamp > mutation.message.timestamp || (this.history[this.history.length - 1].message.timestamp === mutation.message.timestamp && this.history[this.history.length - 1].message.senderCode > mutation.message.senderCode))) {
@@ -180,7 +180,7 @@ var MutationStateController = (function () {
             this.applyMutation(item);
         }
     };
-    MutationStateController.prototype.applyMutation = function (mutation) {
+    DistributedStateController.prototype.applyMutation = function (mutation) {
         var mutationInfo;
         switch (mutation.details.mutationType) {
             case 'property-update':
@@ -212,7 +212,7 @@ var MutationStateController = (function () {
             this.history.push(mutationInfo);
         }
     };
-    MutationStateController.prototype.undoMutation = function (item) {
+    DistributedStateController.prototype.undoMutation = function (item) {
         console.log("MutationStateController.undoMutation", item);
         switch (item.details.mutationType) {
             case 'property-update':
@@ -241,7 +241,7 @@ var MutationStateController = (function () {
                 return;
         }
     };
-    MutationStateController.prototype.doPropertyUpdate = function (item) {
+    DistributedStateController.prototype.doPropertyUpdate = function (item) {
         var previousValue = this.getStateElement(this.state, item.details.path);
         var undoable = {
             message: item.message,
@@ -255,13 +255,13 @@ var MutationStateController = (function () {
         }
         return undoable;
     };
-    MutationStateController.prototype.undoPropertyUpdate = function (undoable) {
+    DistributedStateController.prototype.undoPropertyUpdate = function (undoable) {
         this.setStateElement(this.state, undoable.details.path, undoable.undoValue);
         if (this.host.setProperty) {
             this.host.setProperty(undoable.details.path, undoable.undoValue);
         }
     };
-    MutationStateController.prototype.doPropertyIncrement = function (item) {
+    DistributedStateController.prototype.doPropertyIncrement = function (item) {
         var previousValue = this.getStateElement(this.state, item.details.path);
         if (!previousValue || Number.isNaN(previousValue)) {
             previousValue = 0;
@@ -279,13 +279,13 @@ var MutationStateController = (function () {
         }
         return undoable;
     };
-    MutationStateController.prototype.undoPropertyIncrement = function (undoable) {
+    DistributedStateController.prototype.undoPropertyIncrement = function (undoable) {
         this.setStateElement(this.state, undoable.details.path, undoable.undoValue);
         if (this.host.setProperty) {
             this.host.setProperty(undoable.details.path, undoable.undoValue);
         }
     };
-    MutationStateController.prototype.doArrayInsert = function (item) {
+    DistributedStateController.prototype.doArrayInsert = function (item) {
         var mutationInfo = {
             message: item.message,
             details: item.details,
@@ -334,7 +334,7 @@ var MutationStateController = (function () {
         }
         return mutationInfo;
     };
-    MutationStateController.prototype.undoArrayInsert = function (undoable) {
+    DistributedStateController.prototype.undoArrayInsert = function (undoable) {
         var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayInsert: problem with array path');
@@ -361,7 +361,7 @@ var MutationStateController = (function () {
             console.error('MutationStateController: undoArrayInsert: message recordId missing');
         }
     };
-    MutationStateController.prototype.doArrayRemove = function (item) {
+    DistributedStateController.prototype.doArrayRemove = function (item) {
         var array = this.getStateElement(this.state, item.details.path, true);
         if (!array) {
             console.error('MutationStateController: doArrayRemove: problem with array path');
@@ -394,7 +394,7 @@ var MutationStateController = (function () {
         }
         return undoable;
     };
-    MutationStateController.prototype.undoArrayRemove = function (undoable) {
+    DistributedStateController.prototype.undoArrayRemove = function (undoable) {
         var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayRemove: problem with array path');
@@ -416,7 +416,7 @@ var MutationStateController = (function () {
             }
         }
     };
-    MutationStateController.prototype.doArrayMove = function (item) {
+    DistributedStateController.prototype.doArrayMove = function (item) {
         var array = this.getStateElement(this.state, item.details.path, true);
         if (!array) {
             console.error('MutationStateController: doArrayMove: problem with array path');
@@ -472,7 +472,7 @@ var MutationStateController = (function () {
         }
         return undoable;
     };
-    MutationStateController.prototype.undoArrayMove = function (undoable) {
+    DistributedStateController.prototype.undoArrayMove = function (undoable) {
         var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayMove: problem with array path');
@@ -521,7 +521,7 @@ var MutationStateController = (function () {
             this.host.spliceArray(undoable.details.path, toIndex, 0, this.copy(record));
         }
     };
-    MutationStateController.prototype.doArrayElementUpdate = function (item) {
+    DistributedStateController.prototype.doArrayElementUpdate = function (item) {
         var array = this.getStateElement(this.state, item.details.path, true);
         if (!array) {
             console.error('MutationStateController: doArrayElementUpdate: problem with array path');
@@ -553,7 +553,7 @@ var MutationStateController = (function () {
         }
         return undoable;
     };
-    MutationStateController.prototype.undoArrayElementUpdate = function (undoable) {
+    DistributedStateController.prototype.undoArrayElementUpdate = function (undoable) {
         var array = this.getStateElement(this.state, undoable.details.path, true);
         if (!array) {
             console.error('MutationStateController: undoArrayElementUpdate: problem with array path');
@@ -577,7 +577,7 @@ var MutationStateController = (function () {
             this.host.updateRecord(undoable.details.path, record.id, index, record, undoable.details.elementPath, undoable.undoValue);
         }
     };
-    MutationStateController.prototype.doTextUpdate = function (item) {
+    DistributedStateController.prototype.doTextUpdate = function (item) {
         var previousValue = this.getStateElement(this.state, item.details.path) || '';
         var patchString = item.details.value;
         var dmp = new diff_match_patch_1.diff_match_patch();
@@ -598,7 +598,7 @@ var MutationStateController = (function () {
         }
         return undoable;
     };
-    MutationStateController.prototype.undoTextUpdate = function (undoable) {
+    DistributedStateController.prototype.undoTextUpdate = function (undoable) {
         var currentValue = this.getStateElement(this.state, undoable.details.path) || '';
         var patchString = undoable.details.value;
         var dmp = new diff_match_patch_1.diff_match_patch();
@@ -612,9 +612,9 @@ var MutationStateController = (function () {
     };
     // This helps with a client who is editing text as to what to do with the current
     // caret (cursor) position when a change happens.  Depending on where there are
-    // inserts and deletes relative to the caret position, it may move forward or 
+    // inserts and deletes relative to the caret position, it may move forward or
     // backward.
-    MutationStateController.prototype.getCaretUpdater = function (patches) {
+    DistributedStateController.prototype.getCaretUpdater = function (patches) {
         return function (position) {
             var offset = 0;
             var position1 = 0;
@@ -644,13 +644,15 @@ var MutationStateController = (function () {
                             offset += diff[1].length;
                             position2 += diff[1].length;
                             break;
+                        default:
+                            throw new Error("Unexpected diff type: " + diff[0]);
                     }
                 }
             }
             return offset;
         };
     };
-    MutationStateController.prototype.getStateElement = function (state, path, isArray) {
+    DistributedStateController.prototype.getStateElement = function (state, path, isArray) {
         if (isArray === void 0) { isArray = false; }
         var object = state;
         var parts = path.split('.');
@@ -688,7 +690,7 @@ var MutationStateController = (function () {
             return object;
         }
     };
-    MutationStateController.prototype.setStateElement = function (state, path, value) {
+    DistributedStateController.prototype.setStateElement = function (state, path, value) {
         var parts = path.split('.');
         var object = state;
         for (var i = 0; i < parts.length - 1; i++) {
@@ -737,10 +739,10 @@ var MutationStateController = (function () {
             object[parts[parts.length - 1]] = value;
         }
     };
-    MutationStateController.prototype.copy = function (object) {
+    DistributedStateController.prototype.copy = function (object) {
         return JSON.parse(JSON.stringify(object));
     };
-    MutationStateController.prototype.sendMutation = function (mutationType, path, value, recordId, referenceId, elementPath) {
+    DistributedStateController.prototype.sendMutation = function (mutationType, path, value, recordId, referenceId, elementPath) {
         return __awaiter(this, void 0, void 0, function () {
             var mutation, message;
             return __generator(this, function (_a) {
@@ -773,7 +775,7 @@ var MutationStateController = (function () {
             });
         });
     };
-    return MutationStateController;
+    return DistributedStateController;
 }());
-exports.MutationStateController = MutationStateController;
+exports.DistributedStateController = DistributedStateController;
 //# sourceMappingURL=index.js.map
