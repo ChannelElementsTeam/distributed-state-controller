@@ -4,7 +4,8 @@
   "description": "A helper library for developing Channels card components to help with shared distributed state",
   "main": "bin/index.js",
   "scripts": {
-    "test": "mocha -r ts-node/register src/**/test.ts"
+    "test": "mocha -r ts-node/register src/**/test.ts",
+    "build": "webpack"
   },
   "repository": {
     "type": "git",

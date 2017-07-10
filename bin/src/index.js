@@ -778,4 +778,5 @@ var DistributedStateController = (function () {
     return DistributedStateController;
 }());
 exports.DistributedStateController = DistributedStateController;
+window.DistributedStateController = DistributedStateController;
 //# sourceMappingURL=index.js.map

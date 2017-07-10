@@ -700,3 +700,5 @@ interface UndoableMutationMessage extends MutationMessage {
 export interface HasId {
   id: string;
 }
+
+(window as any).DistributedStateController = DistributedStateController;

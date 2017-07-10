@@ -16,11 +16,13 @@
     "bower_components",
     "test",
     "tests",
-    "bin/test/**/.*",
     ".gitignore",
     ".vscode",
     "tsconfig.json",
-    "tslint.json"
+    "tslint.json",
+    "bin/**/.*",
+    "dist/bin/**/*",
+    "webpack.config.js"
   ],
   "dependencies": {
     "google-diff-match-patch-js": "^1.0.0",
