@@ -15,7 +15,12 @@
     "node_modules",
     "bower_components",
     "test",
-    "tests"
+    "tests",
+    "bin/test/**/.*",
+    ".gitignore",
+    ".vscode",
+    "tsconfig.json",
+    "tslint.json"
   ],
   "dependencies": {
     "google-diff-match-patch-js": "^1.0.0",

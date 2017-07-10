@@ -28,6 +28,7 @@ export declare class MutationStateController {
     private undoArrayElementUpdate(undoable);
     private doTextUpdate(item);
     private undoTextUpdate(undoable);
+    private getCaretUpdater(patches);
     private getStateElement(state, path, isArray?);
     private setStateElement(state, path, value);
     private copy(object);
@@ -38,7 +39,7 @@ export interface HostComponent {
     setProperty?(path: string, value: any): void;
     spliceArray?(path: string, index: number, removeCount: number, recordToInsert?: any): void;
     updateRecord?(path: string, recordId: string, index: number, updatedRecordValue: any, elementPath: string, elementValue: any): void;
-    updateText?(path: string, value: string): void;
+    updateText?(path: string, value: string, caretUpdater: (position: number) => number): void;
 }
 export interface CardToCardMessage {
     timestamp: number;

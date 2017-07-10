@@ -51,10 +51,12 @@ var TestHost = (function () {
     }
     TestHost.prototype.sendMutation = function (mutation) {
         return __awaiter(this, void 0, void 0, function () {
-            var message;
+            var now, message;
             return __generator(this, function (_a) {
                 this.lastMutationSent = mutation;
-                message = { timestamp: this.sentTimestamp ? this.sentTimestamp : Date.now(), senderCode: this.senderCode };
+                now = Date.now();
+                this.sentTimestamp = this.sentTimestamp ? Math.max(now, this.sentTimestamp + 1) : now;
+                message = { timestamp: this.sentTimestamp, senderCode: this.senderCode };
                 this.lastMutationMessage = message;
                 return [2 /*return*/, message];
             });
@@ -73,9 +75,10 @@ var TestHost = (function () {
         };
         this.splices.push(info);
     };
-    TestHost.prototype.updateText = function (path, value) {
+    TestHost.prototype.updateText = function (path, value, updater) {
         this.lastTextPath = path;
         this.lastTextValue = value;
+        this.lastTextUpdater = updater;
     };
     return TestHost;
 }());
@@ -267,6 +270,9 @@ function testSimpleText() {
                     _a.sent();
                     chai_1.expect(testHost1.lastTextPath).to.equal('comment');
                     chai_1.expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+                    chai_1.expect(testHost1.lastTextUpdater(0)).to.equal(0);
+                    chai_1.expect(testHost1.lastTextUpdater(5)).to.equal(12);
+                    chai_1.expect(testHost1.lastTextUpdater(17)).to.equal(23);
                     return [2 /*return*/];
             }
         });

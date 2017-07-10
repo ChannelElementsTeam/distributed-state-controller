@@ -1,5 +1,5 @@
 const uuid = require('uuid');
-import { diff_match_patch } from 'diff-match-patch';
+import { diff_match_patch, Patch } from 'diff-match-patch';
 
 export class MutationStateController {
   private host: HostComponent;
@@ -497,7 +497,8 @@ export class MutationStateController {
     };
     this.setStateElement(this.state, item.details.path, newValue);
     if (this.host.updateText) {
-      this.host.updateText(item.details.path, newValue);
+      const updater = this.getCaretUpdater(patches);
+      this.host.updateText(item.details.path, newValue, updater);
     }
     return undoable;
   }
@@ -510,7 +511,47 @@ export class MutationStateController {
     const originalValue = dmp.patch_apply(patches, currentValue)[0];
     this.setStateElement(this.state, undoable.details.path, originalValue);
     if (this.host.updateText) {
-      this.host.updateText(undoable.details.path, originalValue);
+      const updater = this.getCaretUpdater(patches);
+      this.host.updateText(undoable.details.path, originalValue, updater);
+    }
+  }
+
+  // This helps with a client who is editing text as to what to do with the current
+  // caret (cursor) position when a change happens.  Depending on where there are
+  // inserts and deletes relative to the caret position, it may move forward or 
+  // backward.
+  private getCaretUpdater(patches: Patch[]): (position: number) => number {
+    return (position: number): number => {
+      let offset = 0;
+      let position1 = 0;
+      let position2 = 0;
+      for (const patch of patches) {
+        for (const diff of patch.diffs) {
+          switch (diff[0]) {
+            case 0: // no change
+              if (position < position1 + diff[1].length) {
+                offset += position - position1;
+                return offset;
+              }
+              position1 += diff[1].length;
+              position2 += diff[1].length;
+              offset += diff[1].length;
+              break;
+            case -1: // delete
+              if (position < position1 + diff[1].length) {
+                offset -= position - position1;
+                return offset;
+              }
+              position1 += diff[1].length;
+              break;
+            case 1: // insert
+              offset += diff[1].length;
+              position2 += diff[1].length;
+              break;
+          }
+        }
+      }
+      return offset;
     }
   }
 
@@ -627,7 +668,7 @@ export interface HostComponent {
   setProperty?(path: string, value: any): void;
   spliceArray?(path: string, index: number, removeCount: number, recordToInsert?: any): void;
   updateRecord?(path: string, recordId: string, index: number, updatedRecordValue: any, elementPath: string, elementValue: any): void;
-  updateText?(path: string, value: string): void;
+  updateText?(path: string, value: string, caretUpdater: (position: number) => number): void;
 }
 
 export interface CardToCardMessage {

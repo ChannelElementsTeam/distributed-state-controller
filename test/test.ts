@@ -12,6 +12,7 @@ class TestHost implements HostComponent {
   lastPropertySetValue: any = null;
   lastTextPath: string = null;
   lastTextValue: string = null;
+  lastTextUpdater: (position: number) => number;
 
   splices: SpliceInfo[] = [];
 
@@ -21,7 +22,9 @@ class TestHost implements HostComponent {
 
   async sendMutation(mutation: Mutation): Promise<CardToCardMessage> {
     this.lastMutationSent = mutation;
-    const message: CardToCardMessage = { timestamp: this.sentTimestamp ? this.sentTimestamp : Date.now(), senderCode: this.senderCode };
+    const now = Date.now();
+    this.sentTimestamp = this.sentTimestamp ? Math.max(now, this.sentTimestamp + 1) : now;
+    const message: CardToCardMessage = { timestamp: this.sentTimestamp, senderCode: this.senderCode };
     this.lastMutationMessage = message;
     return message;
   }
@@ -41,9 +44,10 @@ class TestHost implements HostComponent {
     this.splices.push(info);
   }
 
-  updateText(path: string, value: string): void {
+  updateText(path: string, value: string, updater: (position: number) => number): void {
     this.lastTextPath = path;
     this.lastTextValue = value;
+    this.lastTextUpdater = updater;
   }
 }
 
@@ -178,6 +182,9 @@ async function testSimpleText(): Promise<void> {
   await controller1.updateText('comment', "The really quick brown ox");
   expect(testHost1.lastTextPath).to.equal('comment');
   expect(testHost1.lastTextValue).to.equal('The really quick brown ox');
+  expect(testHost1.lastTextUpdater(0)).to.equal(0);
+  expect(testHost1.lastTextUpdater(5)).to.equal(12);
+  expect(testHost1.lastTextUpdater(17)).to.equal(23);
 }
 
 async function testSyncText(): Promise<void> {

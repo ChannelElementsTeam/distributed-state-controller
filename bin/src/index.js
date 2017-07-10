@@ -593,7 +593,8 @@ var MutationStateController = (function () {
         };
         this.setStateElement(this.state, item.details.path, newValue);
         if (this.host.updateText) {
-            this.host.updateText(item.details.path, newValue);
+            var updater = this.getCaretUpdater(patches);
+            this.host.updateText(item.details.path, newValue, updater);
         }
         return undoable;
     };
@@ -605,8 +606,49 @@ var MutationStateController = (function () {
         var originalValue = dmp.patch_apply(patches, currentValue)[0];
         this.setStateElement(this.state, undoable.details.path, originalValue);
         if (this.host.updateText) {
-            this.host.updateText(undoable.details.path, originalValue);
+            var updater = this.getCaretUpdater(patches);
+            this.host.updateText(undoable.details.path, originalValue, updater);
         }
+    };
+    // This helps with a client who is editing text as to what to do with the current
+    // caret (cursor) position when a change happens.  Depending on where there are
+    // inserts and deletes relative to the caret position, it may move forward or 
+    // backward.
+    MutationStateController.prototype.getCaretUpdater = function (patches) {
+        return function (position) {
+            var offset = 0;
+            var position1 = 0;
+            var position2 = 0;
+            for (var _i = 0, patches_1 = patches; _i < patches_1.length; _i++) {
+                var patch = patches_1[_i];
+                for (var _a = 0, _b = patch.diffs; _a < _b.length; _a++) {
+                    var diff = _b[_a];
+                    switch (diff[0]) {
+                        case 0:
+                            if (position < position1 + diff[1].length) {
+                                offset += position - position1;
+                                return offset;
+                            }
+                            position1 += diff[1].length;
+                            position2 += diff[1].length;
+                            offset += diff[1].length;
+                            break;
+                        case -1:
+                            if (position < position1 + diff[1].length) {
+                                offset -= position - position1;
+                                return offset;
+                            }
+                            position1 += diff[1].length;
+                            break;
+                        case 1:
+                            offset += diff[1].length;
+                            position2 += diff[1].length;
+                            break;
+                    }
+                }
+            }
+            return offset;
+        };
     };
     MutationStateController.prototype.getStateElement = function (state, path, isArray) {
         if (isArray === void 0) { isArray = false; }
