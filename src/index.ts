@@ -644,7 +644,7 @@ export class DistributedStateController {
       mutationType: mutationType,
       path: path
     };
-    if (value) {
+    if (typeof value !== 'undefined') {
       mutation.value = value;
     }
     if (recordId) {
