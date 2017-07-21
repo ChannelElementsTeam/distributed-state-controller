@@ -669,7 +669,7 @@ var DistributedStateController = (function () {
                 return undefined;
             }
             else {
-                if (object[part]) {
+                if (typeof object[part] !== 'undefined') {
                     object = object[part];
                 }
                 else if (isArray) {

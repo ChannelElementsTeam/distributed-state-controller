@@ -1,6 +1,6 @@
 {
   "name": "distributed-state-controller",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A helper library for developing Channels card components to help with shared distributed state",
   "main": "bin/index.js",
   "scripts": {

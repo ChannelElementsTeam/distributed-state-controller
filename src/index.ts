@@ -571,7 +571,7 @@ export class DistributedStateController {
         console.warn("MutationStateController.getStateElement: intermediate path element is not object", path, part, i);
         return undefined;
       } else {
-        if (object[part]) {
+        if (typeof object[part] !== 'undefined') {
           object = object[part];
         } else if (isArray) {
           object[part] = [];
